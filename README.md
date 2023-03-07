@@ -1,5 +1,5 @@
 # Super basic ASP.NET minimal API pastebin clone
-Using SQLite for storage.
+Using SQLite for storage. Provided as a sample (and for my own future reference)
 
 # First setup after building:
 Run in project folder: 
@@ -7,4 +7,4 @@ Run in project folder:
 2. dotnet ef database update
 If those don't work, try this first: dotnet tool install --global dotnet-ef --version 6.*
 
-# Thanks to: Medhat Elmasry for this video https://www.youtube.com/watch?v=JG2TeGBs8MU
+### Thanks to: Medhat Elmasry for this video https://www.youtube.com/watch?v=JG2TeGBs8MU
