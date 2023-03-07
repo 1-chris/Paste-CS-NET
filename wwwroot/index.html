@@ -1,0 +1,80 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Text Paste</title>
+</head>
+<body>
+    <form id="paste-form">
+        <label for="paste">Content:</label>
+        <textarea id="content" name="content" rows="4" cols="50"></textarea>
+        <br />
+        <label for="paste">Language:</label>
+        <input type="text" id="language" name="language" />
+        <label for="paste">Expiry:</label>
+        <input type="date" id="expiry" name="expiry" />
+        <br />
+        <input type="submit" value="Submit">
+    </form>
+
+    <div id="result"></div>
+    <div id="resulturl"></div>
+
+    <style>
+        body {
+            background-color: white;
+            color: black;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            body {
+                background-color: black;
+                color: white;
+            }
+        }
+    </style>
+
+    <script>
+        const form = document.getElementById("paste-form");
+        const resultDiv = document.getElementById("result");
+        const resultUrlDiv = document.getElementById("resulturl");
+
+        form.addEventListener("submit", async function (event) {
+            event.preventDefault(); // prevent default form submission
+
+            const content = form.elements["content"].value;
+            const language = form.elements["language"].value;
+            const expiry = form.elements["expiry"].value;
+
+            // create an object with the form data
+            const data = { content, language, expiry };
+
+            try {
+                const response = await fetch("/paste", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (!response.ok) {
+                    throw new Error("HTTP error " + response.status);
+                }
+
+                const resultObject = await response.json();
+                resultDiv.innerText = JSON.stringify(resultObject);
+
+                //resultUrlDiv.innerText = "URL: window.location.href + "paste / " + resultObject.id"
+                const pasteUrl = window.location.href + "paste/" + resultObject.id
+                resultUrlDiv.innerHTML = "URL: <a href='" + pasteUrl + "'>" + pasteUrl + "</a>"
+
+            } catch (error) {
+                // handle error
+                console.error("Form submission failed:", error);
+            }
+        });
+    </script>
+
+</body>
+</html>
