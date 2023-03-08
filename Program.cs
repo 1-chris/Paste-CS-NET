@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,8 +12,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+
+
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<PasteDbContext>(option => option.UseSqlite(connectionString));
+builder.Services.AddHostedService<ExpiredCleanupWorkerService>();
 
 var app = builder.Build();
 
@@ -40,15 +45,14 @@ app.MapGet("/paste/{id}", async (Guid id, PasteDbContext db) =>
 {
     var paste = await db.Pastes.FindAsync(id);
 
-    if (paste?.Expiry < DateTime.UtcNow)
-    {
-        db.Pastes.Remove(paste);
-        await db.SaveChangesAsync();
-
-        return Results.NotFound();
-    }
-
     return paste?.Content is not null ? Results.Text(paste.Content) : Results.NotFound();
+});
+
+app.MapGet("/stats", async (PasteDbContext db) =>
+{
+    var count = await db.Pastes.CountAsync();
+
+    return count;
 });
 
 app.UseDefaultFiles();
@@ -86,4 +90,46 @@ public class PasteDbContext : DbContext
         }.AsEnumerable());
     }
 
+}
+
+public class ExpiredCleanupWorkerService : BackgroundService
+{
+    readonly ILogger<ExpiredCleanupWorkerService> _logger;
+    private readonly IServiceProvider _services;
+
+    public ExpiredCleanupWorkerService(ILogger<ExpiredCleanupWorkerService> logger, IServiceProvider services)
+    {
+        _logger = logger;
+        _services = services;
+    }
+
+    protected async override Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            _logger.LogInformation("Expired paste cleanup worker running at: {time}", DateTimeOffset.Now);
+
+            using (var scope = _services.CreateScope())
+            {
+                var dbContext = scope.ServiceProvider.GetRequiredService<PasteDbContext>();
+
+                var expiredPastes = await dbContext.Pastes
+                    .Where(paste => paste.Expiry < DateTime.UtcNow)
+                    .ToListAsync();
+
+                if (expiredPastes.Any())
+                {
+                    _logger.LogInformation("Removing pastes: {count}", expiredPastes.Count);
+                    foreach (var paste in expiredPastes)
+                    {
+                        dbContext.Pastes.Remove(paste);
+                    }
+                    await dbContext.SaveChangesAsync();
+
+                }
+            }
+
+            await Task.Delay(10000, stoppingToken);
+        }
+    }
 }
