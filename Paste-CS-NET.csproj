@@ -5,20 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>Paste_CS_NET</RootNamespace>
-    <UserSecretsId>adcf7170-d06e-4f8e-abee-df1df2115a37</UserSecretsId>
-    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
-    <DockerfileContext>.</DockerfileContext>
   </PropertyGroup>
-
-  <ItemGroup>
-    <None Remove="pastedb.db" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="pastedb.db">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.3" />
